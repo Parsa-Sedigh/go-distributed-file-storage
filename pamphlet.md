@@ -1,0 +1,7 @@
+In golang, put the mutex above the thing that it's gonna protect from race conditions(using lock)
+
+Organize public funcs at the top of the file and the private funcs at the bottom.
+
+**Note:** The transport shouldn't maintain the map of Peers. Because we could have peers that are connected via
+tcp or grpc or websocket or ... . Instead, the server should maintain this map. So the **server** should hold any kind
+of peers with different transports that they are using.
