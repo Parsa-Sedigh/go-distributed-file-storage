@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"errors"
 	"log"
 	"net"
 )
@@ -109,7 +110,13 @@ func (t *TCPTransport) handleConn(conn net.Conn) {
 
 	// read loop
 	for {
-		if err := t.Decoder.Decode(conn, &rpc); err != nil {
+		err := t.Decoder.Decode(conn, &rpc)
+
+		if errors.Is(err, net.ErrClosed) {
+			return
+		}
+
+		if err != nil {
 			log.Printf("TCP error: %s\n", err)
 
 			continue
