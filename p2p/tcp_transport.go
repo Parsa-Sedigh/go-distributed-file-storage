@@ -16,16 +16,27 @@ type TCPPeer struct {
 	outbound bool
 }
 
-// Close implements the Peer interface
-func (p *TCPPeer) Close() error {
-	return p.conn.Close()
-}
-
 func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	return &TCPPeer{
 		conn:     conn,
 		outbound: outbound,
 	}
+}
+
+func (p *TCPPeer) Send(bytes []byte) error {
+	_, err := p.conn.Write(bytes)
+
+	return err
+}
+
+// RemoteAddr implements the Peer interface and will return the remote address of it's underlying connection.
+func (p *TCPPeer) RemoteAddr() net.Addr {
+	return p.conn.RemoteAddr()
+}
+
+// Close implements the Peer interface
+func (p *TCPPeer) Close() error {
+	return p.conn.Close()
 }
 
 type TCPTransportOpts struct {
@@ -54,6 +65,23 @@ func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 	}
 }
 
+// Close implements the Transport interface.
+func (t *TCPTransport) Close() error {
+	return t.listener.Close()
+}
+
+// Dial implements the Transport interface.
+func (t *TCPTransport) Dial(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	go t.handleConn(conn, true)
+
+	return nil
+}
+
 // Consume implements the Transport interface, which will return a read-only channel for reading the incoming
 // messages received from another peer in the network.
 func (t *TCPTransport) Consume() <-chan RPC {
@@ -70,24 +98,30 @@ func (t *TCPTransport) ListenAndAccept() error {
 
 	go t.startAcceptLoop()
 
+	log.Printf("TCP transport listening on %s\n", t.ListenAddr)
+
 	return nil
 }
 
 func (t *TCPTransport) startAcceptLoop() {
 	for {
 		conn, err := t.listener.Accept()
+		if errors.Is(err, net.ErrClosed) {
+			return
+		}
+
 		if err != nil {
 			log.Printf("TCP accept error: %s\n", err)
 		}
 
-		go t.handleConn(conn)
+		go t.handleConn(conn, false)
 	}
 }
 
-func (t *TCPTransport) handleConn(conn net.Conn) {
+func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 	var err error
 
-	peer := NewTCPPeer(conn, true)
+	peer := NewTCPPeer(conn, outbound)
 
 	defer func() {
 		log.Printf("dropping peer connection: %s\n", err)

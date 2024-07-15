@@ -5,3 +5,6 @@ Organize public funcs at the top of the file and the private funcs at the bottom
 **Note:** The transport shouldn't maintain the map of Peers. Because we could have peers that are connected via
 tcp or grpc or websocket or ... . Instead, the server should maintain this map. So the **server** should hold any kind
 of peers with different transports that they are using.
+
+- Storage: Can store files on disk based on the transformFunc.
+- server: will be running as a daemon and it will receive commands

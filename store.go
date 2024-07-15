@@ -72,10 +72,25 @@ type Store struct {
 	StoreOpts
 }
 
+func NewStore(opts StoreOpts) *Store {
+	if opts.PathTransformFunc == nil {
+		opts.PathTransformFunc = DefaultPathTransformFunc
+	}
+
+	if opts.Root == "" {
+		opts.Root = defaultRootFolderName
+	}
+
+	return &Store{
+		StoreOpts: opts,
+	}
+}
+
 func (s *Store) Has(key string) bool {
 	pathKey := s.PathTransformFunc(key)
+	fullPathWithRoot := fmt.Sprintf("%s/%s", s.Root, pathKey.FullPath())
 
-	_, err := os.Stat(pathKey.FullPath())
+	_, err := os.Stat(fullPathWithRoot)
 	if errors.Is(err, fs.ErrNotExist) {
 		return false
 	}
@@ -88,6 +103,10 @@ func (s *Store) Delete(key string) error {
 	firstPathnameWithRoot := fmt.Sprintf("%s/%s", s.Root, pathKey.FirstPathname())
 
 	return os.RemoveAll(firstPathnameWithRoot)
+}
+
+func (s *Store) Write(key string, r io.Reader) error {
+	return s.writeStream(key, r)
 }
 
 func (s *Store) Read(key string) (io.Reader, error) {
@@ -106,20 +125,6 @@ func (s *Store) Read(key string) (io.Reader, error) {
 	}
 
 	return buf, nil
-}
-
-func NewStore(opts StoreOpts) *Store {
-	if opts.PathTransformFunc == nil {
-		opts.PathTransformFunc = DefaultPathTransformFunc
-	}
-
-	if opts.Root == "" {
-		opts.Root = defaultRootFolderName
-	}
-
-	return &Store{
-		StoreOpts: opts,
-	}
 }
 
 func (s *Store) readStream(key string) (io.ReadCloser, error) {
@@ -152,4 +157,8 @@ func (s *Store) writeStream(key string, r io.Reader) error {
 	log.Printf("wrote (%d) bytes to %s", n, fullPathWithRoot)
 
 	return nil
+}
+
+func (s *Store) clear() error {
+	return os.RemoveAll(s.Root)
 }
