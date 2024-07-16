@@ -8,3 +8,6 @@ of peers with different transports that they are using.
 
 - Storage: Can store files on disk based on the transformFunc.
 - server: will be running as a daemon and it will receive commands
+
+For security reasons, we shouldn't directly store the key names(shouldn't be stored in plain text) that the clients give 
+to us. We should hash them, because the key could have a sensitive word in it!

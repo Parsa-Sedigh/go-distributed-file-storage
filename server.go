@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Parsa-Sedigh/go-distributed-file-storage/p2p"
+	"io"
 	"log"
 	"sync"
 )
@@ -22,6 +23,15 @@ type FileServer struct {
 	peers    map[string]p2p.Peer
 }
 
+type Payload struct {
+	Key  string
+	Data []byte
+}
+
+func (s *FileServer) broadcast(p Payload) error {
+	return nil
+}
+
 func NewFileServer(opts FileServerOpts) *FileServer {
 	storeOpts := StoreOpts{
 		Root:              opts.StorageRoot,
@@ -34,6 +44,14 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 		quitch:         make(chan struct{}),
 		peers:          make(map[string]p2p.Peer),
 	}
+}
+
+func (s *FileServer) StoreFile(key string, data io.Reader) error {
+	// 1. store this file to disk
+
+	// 2. broadcast this file to all known peers in the network
+
+	return nil
 }
 
 func (s *FileServer) Stop() {
